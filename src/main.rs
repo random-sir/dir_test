@@ -1,4 +1,4 @@
-use std::{env, fs, path::Path, process::Command};
+use std::{env, fs, ops::RangeFrom, path::Path, process::Command};
 
 fn main() {
     let mut args: Vec<String> = env::args().collect();
@@ -11,11 +11,19 @@ fn main() {
     let a = raw_path.find('(').unwrap();
     let b = raw_path.find(')').unwrap();
 
-    let path: String = raw_path.drain(a..=b).collect();
+    let range: String = raw_path.drain(a..=b).collect();
 
     println!("{:?}", a);
     println!("{:?}", b);
-    println!("{}", path)
+    println!("{}", raw_path);
+    println!("{}", range);
+
+    let mut p = range.match_indices(|c: char| c.is_ascii_digit());
+
+    let test = p.next();
+
+    println!("{:?}", p);
+    println!("{:?}", test);
 
     // //Create cycle
     // for i in 1..10 {
