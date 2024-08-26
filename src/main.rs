@@ -1,4 +1,4 @@
-use std::{env, fs, ops::RangeFrom, path::Path, process::Command};
+use std::{char, env, fs, ops::RangeFrom, path::Path, process::Command};
 
 fn main() {
     let mut args: Vec<String> = env::args().collect();
@@ -8,35 +8,55 @@ fn main() {
     // // let a = chars.position(|c| c == '(');
     // let b = chars.position(|c| c == ')');
 
-    let a = raw_path.find('(').unwrap();
-    let b = raw_path.find(')').unwrap();
+    let mut chars = raw_path.chars();
+    let mut path: Vec<String> = vec![String::with_capacity(raw_path.capacity())];
 
-    let range: String = raw_path.drain(a..=b).collect();
+    let mut in_parantheses = false;
+    let mut range_str = String::with_capacity(4);
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            //escaping char
+            path.iter_mut().for_each(|a| a.push(chars.next().unwrap())); //Panics if escaping at end of string
+            continue;
+        }
+        if ch == '(' {
+            in_parantheses = true;
+            continue;
+        }
 
-    println!("{:?}", a);
-    println!("{:?}", b);
-    println!("{}", raw_path);
-    println!("{}", range);
+        if ch == ')' {
+            in_parantheses = false;
+            let range: std::ops::RangeInclusive<i32> = {
+                let mut range = range_str.split("..");
+                let left = range.next().unwrap().parse().unwrap();
+                let right = range.next().unwrap().parse().unwrap();
+                left..=right
+            };
 
-    let mut p = range.match_indices(|c: char| c.is_ascii_digit());
+            let count = path.len();
+            for i in range {
+                for j in 0..count {
+                    let base = path[j].clone();
+                    path.push(base + &i.to_string());
+                }
+            }
+            path.drain(0..count);
+            range_str.clear();
 
-    let test = p.next();
+            continue;
+        }
 
-    println!("{:?}", p);
-    println!("{:?}", test);
+        if in_parantheses {
+            range_str.push(ch);
+            continue;
+        }
 
-    // //Create cycle
-    // for i in 1..10 {
-    //     let path = "/tmp/test_".to_owned() + &i.to_string();
+        path.iter_mut().for_each(|a| a.push(ch));
+    }
 
-    //     if Path::new(&path).exists() {
-    //         println!("Deleted: {}", &path);
-    //         fs::remove_dir(path).unwrap();
-    //     } else {
-    //         println!("Created: {}", &path);
-    //         fs::create_dir(path).unwrap();
-    //     }
-    // }
+    println!("{}", range_str);
+
+    path.iter().for_each(|a| println!("{a}"));
 
     // //post-create hook
     // for i in 1..10 {
