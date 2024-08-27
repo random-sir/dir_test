@@ -16,6 +16,10 @@ struct Args {
     /// Flag which enables directory creation
     #[arg(short = 'c')]
     non_dry_run: bool,
+
+    /// Flag which executes the (currently placeholder) post-create hook
+    #[arg(short = 'p')]
+    post_create_hook: bool,
 }
 
 fn main() {
@@ -88,14 +92,15 @@ fn main() {
             process::exit(1);
         }
 
-        for path in paths {
+        for path in &paths {
             fs::create_dir(path).unwrap();
         }
     }
-    // //post-create hook
-    // for i in 1..10 {
-    //     let path = "/tmp/test_".to_owned() + &i.to_string();
-    //     let echo_test = Command::new("./test.sh").arg(path).output().unwrap();
-    //     println!("{}", String::from_utf8(echo_test.stdout).unwrap());
-    // }
+    //post-create hook
+    if args.post_create_hook {
+        for path in &paths {
+            let echo_test = Command::new("./call_hook.sh").arg(path).output().unwrap();
+            println!("{}", String::from_utf8(echo_test.stdout).unwrap());
+        }
+    }
 }
