@@ -1,20 +1,30 @@
 use std::{
-    char,
-    env::{self, args},
-    fs,
-    ops::RangeFrom,
+    env, fs,
     path::Path,
     process::{self, Command},
 };
 
-fn main() {
-    let mut args: Vec<String> = env::args().collect();
+use clap::{command, Parser}; //clap for cli handling
 
-    let mut non_dry_run = false;
-    if args.contains(&"-c".to_string()) {
-        non_dry_run = true;
-    }
-    let raw_path = &mut args[1];
+/// Expand a pattern and make directories
+#[derive(Parser, Debug)]
+#[command(version, about, long_about= None)]
+struct Args {
+    /// Pattern to be expanded
+    pattern: String,
+
+    /// Flag which enables directory creation
+    #[arg(short = 'c')]
+    non_dry_run: bool,
+}
+
+fn main() {
+    // let mut args: Vec<String> = env::args().collect();
+    let args = Args::parse();
+
+    let non_dry_run = args.non_dry_run;
+
+    let raw_path = args.pattern;
 
     let mut chars = raw_path.chars();
     let mut paths: Vec<String> = vec![String::with_capacity(raw_path.capacity())];
