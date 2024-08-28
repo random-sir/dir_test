@@ -99,7 +99,7 @@ fn main() {
     //post-create hook
     if args.post_create_hook {
         for path in &paths {
-            let echo_test = Command::new("./call_hook.sh").arg(path).output().unwrap();
+            let echo_test = Command::new("./call_hook.sh").env("CREATED_DIR", path).output().unwrap();
             println!("{}", String::from_utf8(echo_test.stdout).unwrap());
         }
     }
