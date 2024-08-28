@@ -6,6 +6,8 @@ use std::{
 
 use clap::{command, Parser}; //clap for cli handling
 
+use anyhow::{Context, Result}; //anyhow for error handling
+
 /// Expand a pattern and make directories
 #[derive(Parser, Debug)]
 #[command(version, about, long_about= None)]
@@ -22,7 +24,7 @@ struct Args {
     post_create_hook: Option<PathBuf>,
 }
 
-fn main() {
+fn main() -> Result<()> {
     // let mut args: Vec<String> = env::args().collect();
     let args = Args::parse();
 
@@ -98,13 +100,13 @@ fn main() {
     }
     //post-create hook
     if let Some(hook_path) = args.post_create_hook {
-        let hook_path = fs::canonicalize(hook_path).unwrap();
+        let hook_path = fs::canonicalize(&hook_path)
+            .with_context(|| format!("Couldn't find file: {:?}", &hook_path))?;
         for path in &paths {
-            let echo_test = Command::new(&hook_path)
-                .env("CREATED_DIR", path)
-                .output()
-                .unwrap();
-            println!("{}", String::from_utf8(echo_test.stdout).unwrap());
+            let echo_test = Command::new(&hook_path).env("CREATED_DIR", path).output()?;
+            println!("{}", String::from_utf8(echo_test.stdout)?);
         }
     }
+
+    Ok(())
 }
