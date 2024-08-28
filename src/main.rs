@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    path::Path,
+    path::{Path, PathBuf},
     process::{self, Command},
 };
 
@@ -10,16 +10,16 @@ use clap::{command, Parser}; //clap for cli handling
 #[derive(Parser, Debug)]
 #[command(version, about, long_about= None)]
 struct Args {
-    /// Pattern to be expanded
+    /// Pattern to be expanded.
     pattern: String,
 
-    /// Flag which enables directory creation
+    /// Flag which enables directory creation.
     #[arg(short = 'c')]
     non_dry_run: bool,
 
-    /// Flag which executes the (currently placeholder) post-create hook
-    #[arg(short = 'p')]
-    post_create_hook: bool,
+    /// Script to run for every directory created.
+    #[arg(short = 'p', long = "post-create-hook")]
+    post_create_hook: Option<PathBuf>,
 }
 
 fn main() {
@@ -97,9 +97,13 @@ fn main() {
         }
     }
     //post-create hook
-    if args.post_create_hook {
+    if let Some(hook_path) = args.post_create_hook {
+        let hook_path = fs::canonicalize(hook_path).unwrap();
         for path in &paths {
-            let echo_test = Command::new("./call_hook.sh").env("CREATED_DIR", path).output().unwrap();
+            let echo_test = Command::new(&hook_path)
+                .env("CREATED_DIR", path)
+                .output()
+                .unwrap();
             println!("{}", String::from_utf8(echo_test.stdout).unwrap());
         }
     }
