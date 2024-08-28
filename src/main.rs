@@ -1,12 +1,12 @@
 use std::{
-    env, fs,
+    fs,
     path::{Path, PathBuf},
     process::{self, Command},
 };
 
 use clap::{command, Parser}; //clap for cli handling
 
-use anyhow::{Context, Result}; //anyhow for error handling
+use anyhow::{anyhow, Context, Result}; //anyhow for error handling
 
 /// Expand a pattern and make directories
 #[derive(Parser, Debug)]
@@ -52,8 +52,12 @@ fn main() -> Result<()> {
             in_parantheses = false;
             let range: std::ops::RangeInclusive<i32> = {
                 let mut range = range_str.split("..");
-                let left = range.next().unwrap().parse().unwrap();
-                let right = range.next().unwrap().parse().unwrap();
+                let left = range.next().unwrap().parse().with_context(|| {
+                    format!("Incorrectly formated range: non-numeric value at left arg",)
+                })?;
+                let right = range.next().unwrap().parse().with_context(|| {
+                    format!("Incorrectly formated range: non-numeric value at right arg",)
+                })?;
                 left..=right
             };
 
@@ -78,7 +82,9 @@ fn main() -> Result<()> {
         paths.iter_mut().for_each(|a| a.push(ch));
     }
 
-    paths.iter().for_each(|a| println!("{a}"));
+    if !non_dry_run {
+        paths.iter().for_each(|a| println!("{a}"));
+    }
 
     if non_dry_run {
         //Error if any Directory already exists
@@ -91,19 +97,22 @@ fn main() -> Result<()> {
         }
 
         if any_dir_exists {
-            process::exit(1);
+            anyhow::bail!("Can't create a directory which already exists")
         }
 
         for path in &paths {
-            fs::create_dir(path).unwrap();
+            fs::create_dir(path).with_context(|| format!("Error creating directory: {}", path))?;
         }
     }
     //post-create hook
     if let Some(hook_path) = args.post_create_hook {
-        let hook_path = fs::canonicalize(&hook_path)
+        let hook_fullpath = fs::canonicalize(&hook_path)
             .with_context(|| format!("Couldn't find file: {:?}", &hook_path))?;
         for path in &paths {
-            let echo_test = Command::new(&hook_path).env("CREATED_DIR", path).output()?;
+            let echo_test = Command::new(&hook_fullpath)
+                .env("CREATED_DIR", path)
+                .output()
+                .with_context(|| format!("Couldn't execute file: {:?}", &hook_path))?;
             println!("{}", String::from_utf8(echo_test.stdout)?);
         }
     }
