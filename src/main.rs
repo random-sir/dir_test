@@ -1,12 +1,12 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::{self, Command},
+    process::Command,
 };
 
 use clap::{command, Parser}; //clap for cli handling
 
-use anyhow::{anyhow, Context, Result}; //anyhow for error handling
+use anyhow::{Context, Result}; //anyhow for error handling
 
 /// Expand a pattern and make directories
 #[derive(Parser, Debug)]
@@ -53,10 +53,10 @@ fn main() -> Result<()> {
             let range: std::ops::RangeInclusive<i32> = {
                 let mut range = range_str.split("..");
                 let left = range.next().unwrap().parse().with_context(|| {
-                    format!("Incorrectly formated range: non-numeric value at left arg",)
+                    format!("Incorrectly formated range: non-numeric value at left arg")
                 })?;
                 let right = range.next().unwrap().parse().with_context(|| {
-                    format!("Incorrectly formated range: non-numeric value at right arg",)
+                    format!("Incorrectly formated range: non-numeric value at right arg")
                 })?;
                 left..=right
             };
@@ -109,11 +109,12 @@ fn main() -> Result<()> {
         let hook_fullpath = fs::canonicalize(&hook_path)
             .with_context(|| format!("Couldn't find file: {:?}", &hook_path))?;
         for path in &paths {
-            let echo_test = Command::new(&hook_fullpath)
+            let program_output = Command::new(&hook_fullpath)
+                .current_dir(path)
                 .env("CREATED_DIR", path)
                 .output()
                 .with_context(|| format!("Couldn't execute file: {:?}", &hook_path))?;
-            println!("{}", String::from_utf8(echo_test.stdout)?);
+            println!("{}", String::from_utf8(program_output.stdout)?);
         }
     }
 
