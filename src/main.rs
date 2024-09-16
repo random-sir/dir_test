@@ -48,7 +48,7 @@ fn main() -> Result<()> {
             continue;
         }
 
-        if ch == ')' {
+        if ch == ')' && in_parantheses {
             in_parantheses = false;
             let range: std::ops::RangeInclusive<i32> = {
                 let mut range = range_str.split("..");
